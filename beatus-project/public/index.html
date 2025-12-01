@@ -8,7 +8,6 @@
 
 ```
 <title>AI 일기장</title>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
 
 <!-- 필기체 폰트 (나눔손글씨 펜) -->
 <link
@@ -41,6 +40,31 @@
 </head>
 <body>
 <noscript>JavaScript를 활성화해주세요.</noscript>
+<div id="root"></div>
+</body>
+</html>
+
+1. 기존 <head> 안에 이 줄 추가
+
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+전체 위치 : 
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 일기장</title>
+
+```
+<!-- 필기체 폰트 추가 -->
+<link href="<https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap>" rel="stylesheet">
+
+```
+
+</head>
+<body>
 <div id="root"></div>
 </body>
 </html>
