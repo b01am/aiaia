@@ -267,3 +267,52 @@ background: #555;
 background: rgba(255, 255, 255, 0.2);
 color: #ffffff;
 }
+
+/* 이미지 그리드 */
+.image-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+gap: 15px;
+margin: 20px 0;
+}
+
+.preview-item {
+position: relative;
+border-radius: 10px;
+overflow: hidden;
+aspect-ratio: 1;
+}
+
+.preview-item img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.image-number {
+position: absolute;
+top: 10px;
+left: 10px;
+background: rgba(102, 126, 234, 0.9);
+color: white;
+width: 30px;
+height: 30px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: bold;
+}
+
+.info-text {
+margin-top: 10px;
+color: #666;
+font-size: 0.9rem;
+}
+
+.selected-mood {
+text-align: center;
+margin-top: 15px;
+color: #667eea;
+font-weight: bold;
+}
