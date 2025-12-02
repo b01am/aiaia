@@ -1,985 +1,1023 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Recommendation XAI - Animated Process</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #000;
-            color: #fff;
-            overflow: hidden;
-        }
-
-        .stage {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        /* Stage 1: Song Selection */
-        .album-section {
-            text-align: center;
-            opacity: 0;
-        }
-
-        .album-cover-large {
-            width: 400px;
-            height: 400px;
-            margin: 0 auto 40px;
-            border-radius: 30px;
-            background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 40px 100px rgba(29, 185, 84, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .album-cover-large::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .album-text {
-            font-size: 72px;
-            font-weight: 900;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 1;
-        }
-
-        .track-info-large {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .artist-info-large {
-            font-size: 32px;
-            color: rgba(255,255,255,0.7);
-        }
-
-        /* Stage 2: Feature Extraction */
-        .extraction-container {
-            width: 100%;
-            max-width: 1600px;
-            display: flex;
-            gap: 80px;
-            align-items: center;
-            opacity: 0;
-        }
-
-        .album-mini {
-            width: 300px;
-            height: 300px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 56px;
-            font-weight: 900;
-            box-shadow: 0 30px 80px rgba(29, 185, 84, 0.4);
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .data-stream {
-            position: absolute;
-            right: -40px;
-            width: 40px;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, var(--stream-color));
-            opacity: 0;
-        }
-
-        .features-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .feature-row {
-            opacity: 0;
-            transform: translateX(-50px);
-        }
-
-        .feature-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, var(--color1), var(--color2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin-right: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
-
-        .feature-title-group {
-            flex: 1;
-        }
-
-        .feature-name {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .feature-subtitle {
-            font-size: 14px;
-            color: rgba(255,255,255,0.5);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .feature-value-display {
-            font-size: 56px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--color1), var(--color2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-right: 20px;
-        }
-
-        .feature-bar-container {
-            position: relative;
-            height: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-
-        .feature-bar-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--color1), var(--color2));
-            border-radius: 10px;
-            position: relative;
-            transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .feature-bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 40px;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
-            animation: bar-shimmer 1.5s infinite;
-        }
-
-        @keyframes bar-shimmer {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
-        }
-
-        .feature-explanation {
-            font-size: 16px;
-            color: rgba(255,255,255,0.6);
-            line-height: 1.6;
-        }
-
-        .feature-row.f1 { --color1: #ff0080; --color2: #ff4da6; }
-        .feature-row.f2 { --color1: #00d4ff; --color2: #0099ff; }
-        .feature-row.f3 { --color1: #a855f7; --color2: #c084fc; }
-        .feature-row.f4 { --color1: #ffd700; --color2: #ffa500; }
-
-        /* Stage 3: Radar Chart Formation */
-        .chart-stage {
-            width: 100%;
-            max-width: 1400px;
-            display: flex;
-            gap: 60px;
-            align-items: center;
-            opacity: 0;
-        }
-
-        .chart-container {
-            width: 600px;
-            height: 600px;
-            position: relative;
-        }
-
-        .chart-glow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 120%;
-            height: 120%;
-            background: radial-gradient(circle, rgba(121,40,202,0.3) 0%, transparent 70%);
-            filter: blur(60px);
-            animation: glow-pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes glow-pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
-        .chart-explanation {
-            flex: 1;
-        }
-
-        .chart-title {
-            font-size: 42px;
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ff0080, #00d4ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .chart-desc {
-            font-size: 18px;
-            line-height: 1.8;
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 40px;
-        }
-
-        .legend-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .legend-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--color1), var(--color2));
-        }
-
-        .legend-text {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        /* Stage 4: Search Animation */
-        .search-stage {
-            position: relative;
-            width: 900px;
-            height: 900px;
-            opacity: 0;
-        }
-
-        .center-node {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1DB954, #1ed760);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 64px;
-            font-weight: 900;
-            box-shadow: 0 0 80px rgba(29,185,84,0.6);
-            z-index: 10;
-        }
-
-        .wave-circle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            border: 3px solid;
-            opacity: 0;
-        }
-
-        .wave-circle.w1 { border-color: rgba(255,0,128,0.6); }
-        .wave-circle.w2 { border-color: rgba(0,212,255,0.6); }
-        .wave-circle.w3 { border-color: rgba(168,85,247,0.6); }
-        .wave-circle.w4 { border-color: rgba(255,215,0,0.6); }
-
-        .candidate-node {
-            position: absolute;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .candidate-node .node-initial {
-            font-size: 24px;
-            font-weight: 900;
-            margin-bottom: 4px;
-        }
-
-        .candidate-node.highlighted {
-            background: rgba(121,40,202,0.3);
-            border-color: #a855f7;
-            box-shadow: 0 0 40px rgba(168,85,247,0.6);
-            transform: scale(1.2);
-        }
-
-        /* Stage 5: Comparison */
-        .comparison-stage {
-            width: 100%;
-            max-width: 1600px;
-            opacity: 0;
-        }
-
-        .comparison-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .comparison-main-title {
-            font-size: 56px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ff0080, #00d4ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
-        }
-
-        .comparison-subtitle {
-            font-size: 20px;
-            color: rgba(255,255,255,0.6);
-        }
-
-        .scenarios-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-        }
-
-        .scenario-box {
-            background: rgba(255,255,255,0.03);
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 32px;
-            padding: 40px;
-            position: relative;
-        }
-
-        .scenario-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--grad1), var(--grad2));
-            border-radius: 32px 32px 0 0;
-        }
-
-        .scenario-box.before { --grad1: #ff0080; --grad2: #ff4da6; }
-        .scenario-box.after { --grad1: #00d4ff; --grad2: #0099ff; }
-
-        .scenario-label {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--grad1), var(--grad2));
-            padding: 8px 24px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-        }
-
-        .scenario-title-text {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
-        .weights-info {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 40px;
-        }
-
-        .weight-pill {
-            background: rgba(255,255,255,0.1);
-            padding: 6px 16px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .results-list-comparison {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .result-item-comparison {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 24px;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .result-item-comparison:hover {
-            transform: translateX(8px);
-            border-color: rgba(255,255,255,0.3);
-        }
-
-        .result-rank-badge {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--rank-c1), var(--rank-c2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 900;
-        }
-
-        .result-item-comparison:nth-child(1) { --rank-c1: #ffd700; --rank-c2: #ffed4e; }
-        .result-item-comparison:nth-child(2) { --rank-c1: #c0c0c0; --rank-c2: #e8e8e8; }
-        .result-item-comparison:nth-child(3) { --rank-c1: #cd7f32; --rank-c2: #e59866; }
-        .result-item-comparison:nth-child(4) { --rank-c1: #666; --rank-c2: #888; }
-
-        .result-content-comparison {
-            margin-left: 56px;
-        }
-
-        .result-track-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .result-artist-subtitle {
-            font-size: 13px;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 16px;
-        }
-
-        .result-match-percent {
-            display: inline-block;
-            font-size: 32px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #00d4ff, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
-        }
-
-        .contrib-visualization {
-            display: flex;
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-            background: rgba(255,255,255,0.05);
-            margin-bottom: 12px;
-        }
-
-        .contrib-segment {
-            height: 100%;
-            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .contrib-segment.seg1 { background: #ff0080; }
-        .contrib-segment.seg2 { background: #00d4ff; }
-        .contrib-segment.seg3 { background: #a855f7; }
-        .contrib-segment.seg4 { background: #ffd700; }
-
-        .contrib-labels {
-            display: flex;
-            gap: 16px;
-            font-size: 11px;
-            color: rgba(255,255,255,0.6);
-        }
-
-        .contrib-labels span {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .contrib-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .contrib-dot.d1 { background: #ff0080; }
-        .contrib-dot.d2 { background: #00d4ff; }
-        .contrib-dot.d3 { background: #a855f7; }
-        .contrib-dot.d4 { background: #ffd700; }
-
-        /* Status bar */
-        .status-bar {
-            position: fixed;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            padding: 16px 40px;
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.1);
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            z-index: 1000;
-        }
-
-        .progress-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #ff0080, #00d4ff);
-            width: 0%;
-            transition: width 0.3s ease;
-            z-index: 1000;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Recommendation XAI - Dynamic Center Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #000;
+    color: #fff;
+    overflow: hidden;
+}
+
+/* Album Intro Screen */
+.intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 2000;
+    opacity: 0;
+}
+
+.intro-screen.visible {
+    opacity: 1;
+}
+
+.album-cover-intro {
+    width: 400px;
+    height: 400px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #ff0080, #ff4da6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 120px;
+    font-weight: 900;
+    margin-bottom: 40px;
+    box-shadow: 0 40px 100px rgba(255, 0, 128, 0.6);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.song-info-intro {
+    text-align: center;
+}
+
+.song-title-intro {
+    font-size: 64px;
+    font-weight: 900;
+    margin-bottom: 16px;
+}
+
+.artist-intro {
+    font-size: 36px;
+    color: rgba(255,255,255,0.6);
+}
+
+/* Feature Cards Screen */
+.features-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 1900;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.features-screen.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.features-title {
+    font-size: 48px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff0080, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 60px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    max-width: 1000px;
+}
+
+.feature-card {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 30px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+.feature-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.feature-card.f1 { border-top: 4px solid #ff0080; }
+.feature-card.f2 { border-top: 4px solid #00d4ff; }
+.feature-card.f3 { border-top: 4px solid #a855f7; }
+.feature-card.f4 { border-top: 4px solid #ffd700; }
+
+.feature-icon-big {
+    font-size: 56px;
+    margin-bottom: 20px;
+}
+
+.feature-label {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.feature-value-big {
+    font-size: 72px;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+
+.feature-card.f1 .feature-value-big { color: #ff0080; }
+.feature-card.f2 .feature-value-big { color: #00d4ff; }
+.feature-card.f3 .feature-value-big { color: #a855f7; }
+.feature-card.f4 .feature-value-big { color: #ffd700; }
+
+.feature-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+}
+
+/* 3D Canvas */
+#canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+}
+
+#canvas-container.visible {
+    opacity: 1;
+}
+
+.ui-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+}
+
+.ui-overlay.visible {
+    opacity: 1;
+}
+
+.stage-info {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 20px 50px;
+    text-align: center;
+}
+
+.stage-title {
+    font-size: 32px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff0080, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.stage-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.center-song-info {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(20px);
+    border: 2px solid #ff0080;
+    border-radius: 20px;
+    padding: 20px 30px;
+    text-align: center;
+    min-width: 300px;
+}
+
+.center-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.center-song-name {
+    font-size: 24px;
+    font-weight: 900;
+    color: #ff0080;
+    margin-bottom: 4px;
+}
+
+.center-artist {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+}
+
+.center-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.center-stat {
+    background: rgba(255,255,255,0.05);
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.center-stat strong {
+    display: block;
+    font-size: 20px;
+    font-weight: 900;
+    margin-bottom: 2px;
+}
+
+.center-stat.s1 { border-left: 3px solid #ff0080; }
+.center-stat.s2 { border-left: 3px solid #00d4ff; }
+.center-stat.s3 { border-left: 3px solid #a855f7; }
+.center-stat.s4 { border-left: 3px solid #ffd700; }
+
+.controls {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    pointer-events: all;
+}
+
+.control-btn {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 14px 40px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.control-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #ff0080;
+    box-shadow: 0 0 20px rgba(255,0,128,0.5);
+    transform: translateY(-2px);
+}
+
+.control-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Node Labels */
+.node-label {
+    position: absolute;
+    background: rgba(0,0,0,0.95);
+    backdrop-filter: blur(20px);
+    border: 2px solid;
+    border-radius: 20px;
+    padding: 16px 20px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -120%);
+    transition: opacity 0.3s ease;
+    min-width: 240px;
+    text-align: center;
+    z-index: 100;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+.node-label.visible {
+    opacity: 1;
+}
+
+.node-label.center { border-color: #ff0080; background: rgba(255,0,128,0.1); }
+.node-label.candidate { border-color: #00d4ff; }
+.node-label.other { border-color: #a855f7; }
+.node-label.final { border-color: #ffd700; background: rgba(255,215,0,0.1); }
+
+.node-label-name {
+    font-size: 20px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.node-label-artist {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.node-label-scores {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.node-label-score {
+    background: rgba(255,255,255,0.05);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.node-label-score strong {
+    font-size: 18px;
+    font-weight: 900;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.node-label-score.f { border-left: 3px solid #ff0080; }
+.node-label-score.s { border-left: 3px solid #00d4ff; }
+.node-label-score.so { border-left: 3px solid #a855f7; }
+.node-label-score.p { border-left: 3px solid #ffd700; }
+
+.progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ff0080, #00d4ff, #a855f7, #ffd700);
+    width: 0%;
+    transition: width 0.5s ease;
+    z-index: 1000;
+}
+</style>
 </head>
 <body>
-    <div class="status-bar" id="statusBar">Loading System...</div>
-    <div class="progress-bar" id="progressBar"></div>
 
-    <div class="stage" id="mainStage">
-        <!-- Content will be dynamically added -->
+<!-- Intro Screen -->
+<div class="intro-screen" id="introScreen">
+    <div class="album-cover-intro">JB</div>
+    <div class="song-info-intro">
+        <div class="song-title-intro">Sorry</div>
+        <div class="artist-intro">Justin Bieber</div>
+    </div>
+</div>
+
+<!-- Features Screen -->
+<div class="features-screen" id="featuresScreen">
+    <div class="features-title">Audio Features Analysis</div>
+    <div class="features-grid">
+        <div class="feature-card f1">
+            <div class="feature-icon-big">😊</div>
+            <div class="feature-label">Feeling</div>
+            <div class="feature-value-big">43%</div>
+            <div class="feature-desc">감정적 밝기 - 중립적이고 균형잡힌 감정</div>
+        </div>
+        <div class="feature-card f2">
+            <div class="feature-icon-big">💃</div>
+            <div class="feature-label">Style</div>
+            <div class="feature-value-big">65%</div>
+            <div class="feature-desc">템포와 리듬 - 춤추기 적당한 곡</div>
+        </div>
+        <div class="feature-card f3">
+            <div class="feature-icon-big">⚡</div>
+            <div class="feature-label">Sound</div>
+            <div class="feature-value-big">76%</div>
+            <div class="feature-desc">음악의 강렬함 - 에너제틱하고 활기찬 곡</div>
+        </div>
+        <div class="feature-card f4">
+            <div class="feature-icon-big">⭐</div>
+            <div class="feature-label">Preference</div>
+            <div class="feature-value-big">85</div>
+            <div class="feature-desc">사용자 선호 장르와의 일치도</div>
+        </div>
+    </div>
+</div>
+
+<!-- 3D Visualization -->
+<div id="canvas-container"></div>
+
+<div class="ui-overlay">
+    <div class="stage-info">
+        <div class="stage-title" id="stageTitle">초기화</div>
+        <div class="stage-desc" id="stageDesc">3D Vector Space</div>
     </div>
 
-    <script>
-        const DATA = {
-            base: {
-                name: "Sorry",
-                artist: "Justin Bieber",
-                initial: "JB",
-                features: {
-                    feeling: { value: 42.8, label: "Feeling", subtitle: "Valence • Positivity", icon: "😊", desc: "곡의 감정적 밝기 - 중립적이고 균형잡힌 감정" },
-                    style: { value: 58.5, label: "Style", subtitle: "Danceability • Rhythm", icon: "💃", desc: "템포와 비트 기반 춤 적합도 - 춤추기 적당함" },
-                    sound: { value: 84.2, label: "Sound", subtitle: "Energy • Intensity", icon: "⚡", desc: "음악의 강렬함과 활동성 - 매우 에너제틱하고 활기참" },
-                    preference: { value: 85, label: "Preference", subtitle: "Popularity • User Match", icon: "⭐", desc: "사용자 선호 장르(인디, K-pop, Pop, Jazz)와의 일치도" }
-                }
-            },
-            scenario1: {
-                weights: { feeling: 25, style: 25, sound: 25, preference: 25 },
-                results: [
-                    { name: "Blinding Lights", artist: "The Weeknd", match: 91.3, contrib: [24.8, 25.4, 24.3, 25.5] },
-                    { name: "Levitating", artist: "Dua Lipa", match: 83.7, contrib: [15.3, 26.4, 29.4, 29.0] },
-                    { name: "Closer", artist: "The Chainsmokers", match: 81.6, contrib: [23.5, 25.6, 20.9, 30.0] },
-                    { name: "Shape of You", artist: "Ed Sheeran", match: 75.7, contrib: [16.4, 25.1, 26.8, 31.7] }
-                ]
-            },
-            scenario2: {
-                weights: { feeling: 35, style: 35, sound: 20, preference: 10 },
-                results: [
-                    { name: "Blinding Lights", artist: "The Weeknd", match: 91.3, contrib: [34.7, 35.6, 19.5, 10.2] },
-                    { name: "Closer", artist: "The Chainsmokers", match: 79.6, contrib: [33.7, 36.8, 17.1, 12.3] },
-                    { name: "Levitating", artist: "Dua Lipa", match: 78.2, contrib: [23.0, 39.5, 25.1, 12.4] },
-                    { name: "Shape of You", artist: "Ed Sheeran", match: 69.8, contrib: [24.9, 38.1, 23.2, 13.8] }
-                ]
+    <div class="center-song-info" id="centerSongInfo" style="display:none;">
+        <div class="center-label">Current Center Song</div>
+        <div class="center-song-name" id="centerName">Sorry</div>
+        <div class="center-artist" id="centerArtist">Justin Bieber</div>
+        <div class="center-stats">
+            <div class="center-stat s1"><strong id="centerFeeling">43</strong>Feeling</div>
+            <div class="center-stat s2"><strong id="centerStyle">65</strong>Style</div>
+            <div class="center-stat s3"><strong id="centerSound">76</strong>Sound</div>
+            <div class="center-stat s4"><strong id="centerPref">85</strong>Preference</div>
+        </div>
+    </div>
+
+    <div id="nodeLabels"></div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="prevStage()" id="prevBtn">◀ Prev</button>
+        <button class="control-btn" onclick="nextStage()" id="nextBtn">Next ▶</button>
+        <button class="control-btn" onclick="restartShow()" id="restartBtn">🔄 Restart</button>
+    </div>
+
+    <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<script>
+// Real Spotify Data (valence, danceability, energy in 0-100 scale)
+const SONGS = [
+    {
+        name: "Sorry",
+        artist: "Justin Bieber",
+        feeling: 43,
+        style: 65,
+        sound: 76,
+        preference: 85
+    },
+    {
+        name: "Blinding Lights",
+        artist: "The Weeknd",
+        feeling: 36,
+        style: 51,
+        sound: 73,
+        preference: 95
+    },
+    {
+        name: "Shape of You",
+        artist: "Ed Sheeran",
+        feeling: 93,
+        style: 83,
+        sound: 65,
+        preference: 93
+    },
+    {
+        name: "Levitating",
+        artist: "Dua Lipa",
+        feeling: 92,
+        style: 70,
+        sound: 70,
+        preference: 88
+    },
+    {
+        name: "Closer",
+        artist: "The Chainsmokers",
+        feeling: 52,
+        style: 75,
+        sound: 52,
+        preference: 82
+    },
+    {
+        name: "Sunflower",
+        artist: "Post Malone",
+        feeling: 76,
+        style: 76,
+        sound: 48,
+        preference: 90
+    },
+    {
+        name: "Don't Start Now",
+        artist: "Dua Lipa",
+        feeling: 75,
+        style: 79,
+        sound: 79,
+        preference: 84
+    },
+    {
+        name: "Watermelon Sugar",
+        artist: "Harry Styles",
+        feeling: 82,
+        style: 55,
+        sound: 78,
+        preference: 86
+    },
+    {
+        name: "Someone You Loved",
+        artist: "Lewis Capaldi",
+        feeling: 24,
+        style: 51,
+        sound: 41,
+        preference: 87
+    },
+    {
+        name: "Dance Monkey",
+        artist: "Tones and I",
+        feeling: 82,
+        style: 82,
+        sound: 59,
+        preference: 89
+    }
+];
+
+let scene, camera, renderer, nodes = [];
+let currentStage = -2; // -2: intro, -1: features, 0-4: 3D stages
+let centerSongIndex = 0;
+
+function initApp() {
+    showIntro();
+}
+
+function showIntro() {
+    const intro = document.getElementById('introScreen');
+    gsap.to(intro, { opacity: 1, duration: 1, ease: 'power2.out' });
+    setTimeout(() => {
+        gsap.to(intro, {
+            opacity: 0,
+            duration: 0.8,
+            ease: 'power2.in',
+            onComplete: () => {
+                intro.style.display = 'none';
+                showFeatures();
             }
-        };
+        });
+    }, 3000);
+}
 
-        const stage = document.getElementById('mainStage');
-        const statusBar = document.getElementById('statusBar');
-        const progressBar = document.getElementById('progressBar');
-        let currentStage = 0;
+function showFeatures() {
+    const features = document.getElementById('featuresScreen');
+    features.classList.add('visible');
+    
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach((card, i) => {
+        gsap.to(card, {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            delay: i * 0.2,
+            ease: 'back.out(1.7)'
+        });
+    });
 
-        function updateStatus(text, progress) {
-            statusBar.textContent = text;
-            progressBar.style.width = progress + '%';
+    setTimeout(() => {
+        gsap.to(features, {
+            opacity: 0,
+            duration: 0.8,
+            ease: 'power2.in',
+            onComplete: () => {
+                features.style.display = 'none';
+                init3D();
+            }
+        });
+    }, 4000);
+}
+
+function init3D() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.Fog(0x000000, 15, 40);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(12, 8, 15);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0xff0080, 2, 60);
+    pointLight1.position.set(8, 8, 8);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0x00d4ff, 2, 60);
+    pointLight2.position.set(-8, 5, -8);
+    scene.add(pointLight2);
+
+    const pointLight3 = new THREE.PointLight(0xa855f7, 1.5, 50);
+    pointLight3.position.set(0, -5, 8);
+    scene.add(pointLight3);
+
+    createNodes();
+    animate();
+
+    document.getElementById('canvas-container').classList.add('visible');
+    document.querySelector('.ui-overlay').classList.add('visible');
+
+    currentStage = 0;
+    executeStage(0);
+}
+
+function createNodes() {
+    SONGS.forEach((song, i) => {
+        const size = 0.8;
+        const geom = new THREE.SphereGeometry(size, 32, 32);
+        const color = 0x00d4ff;
+
+        const mat = new THREE.MeshPhongMaterial({
+            color: color,
+            emissive: color,
+            emissiveIntensity: 0.6,
+            shininess: 100
+        });
+
+        const node = new THREE.Mesh(geom, mat);
+
+        // Random initial position
+        const angle = (i / SONGS.length) * Math.PI * 2;
+        const distance = 5;
+        node.position.set(
+            Math.cos(angle) * distance + (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 4,
+            Math.sin(angle) * distance + (Math.random() - 0.5) * 2
+        );
+
+        node.userData = { song: song, index: i };
+        scene.add(node);
+        nodes.push(node);
+
+        createNodeLabel(node, i);
+    });
+}
+
+function createNodeLabel(node, index) {
+    const label = document.createElement('div');
+    label.className = 'node-label candidate';
+    label.id = `label-${index}`;
+
+    const song = node.userData.song;
+
+    label.innerHTML = `
+        <div class="node-label-name">${song.name}</div>
+        <div class="node-label-artist">${song.artist}</div>
+        <div class="node-label-scores">
+            <div class="node-label-score f"><strong>${song.feeling}</strong>Feeling</div>
+            <div class="node-label-score s"><strong>${song.style}</strong>Style</div>
+            <div class="node-label-score so"><strong>${song.sound}</strong>Sound</div>
+            <div class="node-label-score p"><strong>${song.preference}</strong>Preference</div>
+        </div>
+    `;
+
+    document.getElementById('nodeLabels').appendChild(label);
+    node.userData.label = label;
+}
+
+function updateNodeLabels() {
+    nodes.forEach(node => {
+        const label = node.userData.label;
+        if (!label) return;
+
+        const vector = node.position.clone();
+        vector.project(camera);
+
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+        label.style.left = x + 'px';
+        label.style.top = y + 'px';
+        label.style.display = vector.z > 1 ? 'none' : 'block';
+    });
+}
+
+function showNodeLabel(index, show = true) {
+    const label = document.getElementById(`label-${index}`);
+    if (label) {
+        if (show) {
+            label.classList.add('visible');
+        } else {
+            label.classList.remove('visible');
         }
+    }
+}
 
-        // Stage 1: Show Album
-        function showStage1() {
-            updateStatus('Step 1: Selecting Base Track', 10);
-            stage.innerHTML = `
-                <div class="album-section">
-                    <div class="album-cover-large">
-                        <div class="album-text">${DATA.base.initial}</div>
-                    </div>
-                    <div class="track-info-large">${DATA.base.name}</div>
-                    <div class="artist-info-large">${DATA.base.artist}</div>
-                </div>
-            `;
-            gsap.to('.album-section', { opacity: 1, duration: 1, ease: 'power2.out' });
-            setTimeout(() => showStage2(), 3000);
+function hideAllLabels() {
+    nodes.forEach((node, i) => showNodeLabel(i, false));
+}
+
+function showAllLabels() {
+    nodes.forEach((node, i) => {
+        setTimeout(() => showNodeLabel(i, true), i * 150);
+    });
+}
+
+function updateCenterInfo(songIndex) {
+    const song = SONGS[songIndex];
+    document.getElementById('centerName').textContent = song.name;
+    document.getElementById('centerArtist').textContent = song.artist;
+    document.getElementById('centerFeeling').textContent = song.feeling;
+    document.getElementById('centerStyle').textContent = song.style;
+    document.getElementById('centerSound').textContent = song.sound;
+    document.getElementById('centerPref').textContent = song.preference;
+    document.getElementById('centerSongInfo').style.display = 'block';
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const time = Date.now() * 0.0001;
+    camera.position.x = Math.sin(time * 0.25) * 12;
+    camera.position.z = Math.cos(time * 0.25) * 15;
+    camera.position.y = 8 + Math.sin(time * 0.15) * 3;
+    camera.lookAt(0, 0, 0);
+
+    updateNodeLabels();
+    renderer.render(scene, camera);
+}
+
+const stages = [
+    {
+        title: "초기 배치",
+        desc: "Random Distribution in 3D Space",
+        centerSong: 0, // Sorry
+        action: stage0
+    },
+    {
+        title: "Feeling 필터링",
+        desc: "Filtering by Valence - Emotional Brightness",
+        centerSong: 3, // Levitating (highest feeling: 92)
+        action: stage1
+    },
+    {
+        title: "Style 필터링",
+        desc: "Filtering by Danceability - Rhythm Suitability",
+        centerSong: 2, // Shape of You (highest style: 83)
+        action: stage2
+    },
+    {
+        title: "Sound 필터링",
+        desc: "Filtering by Energy - Sound Intensity",
+        centerSong: 1, // Blinding Lights (well-balanced energy)
+        action: stage3
+    },
+    {
+        title: "최종 추천",
+        desc: "Final Top 4 Recommendations - Combined Score",
+        centerSong: 0, // Back to Sorry
+        action: stage4
+    }
+];
+
+function executeStage(stage) {
+    if (stage < 0 || stage >= stages.length) return;
+    
+    currentStage = stage;
+    const stageData = stages[stage];
+    
+    document.getElementById('stageTitle').textContent = stageData.title;
+    document.getElementById('stageDesc').textContent = stageData.desc;
+    document.getElementById('progressBar').style.width = ((stage + 1) / stages.length * 100) + '%';
+    
+    // Update center song info
+    centerSongIndex = stageData.centerSong;
+    updateCenterInfo(centerSongIndex);
+    
+    // Update button states
+    document.getElementById('prevBtn').disabled = (stage === 0);
+    document.getElementById('nextBtn').disabled = (stage === stages.length - 1);
+    
+    stageData.action();
+}
+
+function nextStage() {
+    if (currentStage < stages.length - 1) {
+        executeStage(currentStage + 1);
+    }
+}
+
+function prevStage() {
+    if (currentStage > 0) {
+        executeStage(currentStage - 1);
+    }
+}
+
+function restartShow() {
+    location.reload();
+}
+
+function stage0() {
+    hideAllLabels();
+    
+    // Highlight center node
+    setTimeout(() => {
+        showNodeLabel(centerSongIndex, true);
+        
+        nodes[centerSongIndex].userData.label.className = 'node-label center visible';
+        gsap.to(nodes[centerSongIndex].material.color, {
+            r: 1, g: 0, b: 0.5,
+            duration: 1
+        });
+        gsap.to(nodes[centerSongIndex].material.emissive, {
+            r: 1, g: 0, b: 0.5,
+            duration: 1
+        });
+        gsap.to(nodes[centerSongIndex].scale, {
+            x: 1.5, y: 1.5, z: 1.5,
+            duration: 1,
+            ease: 'elastic.out(1, 0.5)'
+        });
+    }, 500);
+}
+
+function stage1() {
+    // Feeling-based filtering - Center: Levitating (feeling: 92)
+    showAllLabels();
+    
+    const center = SONGS[centerSongIndex];
+    
+    nodes.forEach((node, i) => {
+        const song = node.userData.song;
+        const diff = Math.abs(song.feeling - center.feeling);
+        const distance = (diff / 40) * 5;
+        
+        const angle = (i / SONGS.length) * Math.PI * 2;
+        
+        gsap.to(node.position, {
+            x: Math.cos(angle) * distance,
+            y: (song.feeling - center.feeling) / 25,
+            z: Math.sin(angle) * distance,
+            duration: 2.5,
+            ease: 'power2.inOut'
+        });
+        
+        if (i === centerSongIndex) {
+            gsap.to(node.position, { x: 0, y: 0, z: 0, duration: 2, ease: 'power2.inOut' });
+            node.userData.label.className = 'node-label center visible';
+            gsap.to(node.material.color, { r: 1, g: 0, b: 0.5, duration: 1 });
+            gsap.to(node.material.emissive, { r: 1, g: 0, b: 0.5, duration: 1 });
+        } else {
+            node.userData.label.className = 'node-label candidate visible';
+            gsap.to(node.material.color, { r: 0, g: 0.83, b: 1, duration: 1 });
+            gsap.to(node.material.emissive, { r: 0, g: 0.83, b: 1, duration: 1 });
+            gsap.to(node.scale, { x: 1, y: 1, z: 1, duration: 1 });
         }
+    });
+}
 
-        // Stage 2: Extract Features
-        function showStage2() {
-            updateStatus('Step 2: Extracting Audio Features', 25);
-            
-            const features = DATA.base.features;
-            const featureKeys = Object.keys(features);
-            
-            stage.innerHTML = `
-                <div class="extraction-container">
-                    <div class="album-mini">
-                        ${DATA.base.initial}
-                        ${featureKeys.map((_, i) => `<div class="data-stream" style="--stream-color: var(--color${i+1}); top: ${25 + i*20}%;"></div>`).join('')}
-                    </div>
-                    <div class="features-panel">
-                        ${featureKeys.map((key, i) => {
-                            const f = features[key];
-                            return `
-                                <div class="feature-row f${i+1}">
-                                    <div class="feature-header">
-                                        <div class="feature-icon">${f.icon}</div>
-                                        <div class="feature-title-group">
-                                            <div class="feature-name">${f.label}</div>
-                                            <div class="feature-subtitle">${f.subtitle}</div>
-                                        </div>
-                                        <div class="feature-value-display">0%</div>
-                                    </div>
-                                    <div class="feature-bar-container">
-                                        <div class="feature-bar-fill" data-value="${f.value}"></div>
-                                    </div>
-                                    <div class="feature-explanation">${f.desc}</div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-
-            gsap.to('.extraction-container', { opacity: 1, duration: 0.8, ease: 'power2.out' });
-
-            // Animate features one by one
-            featureKeys.forEach((key, i) => {
-                setTimeout(() => {
-                    const row = document.querySelectorAll('.feature-row')[i];
-                    const stream = document.querySelectorAll('.data-stream')[i];
-                    const bar = row.querySelector('.feature-bar-fill');
-                    const valueDisplay = row.querySelector('.feature-value-display');
-                    const targetValue = DATA.base.features[key].value;
-
-                    // Stream animation
-                    gsap.to(stream, {
-                        opacity: 1,
-                        width: 200,
-                        duration: 0.8,
-                        ease: 'power2.out',
-                        onComplete: () => {
-                            gsap.to(stream, { opacity: 0, duration: 0.3 });
-                        }
-                    });
-
-                    // Row slide in
-                    gsap.to(row, {
-                        opacity: 1,
-                        x: 0,
-                        duration: 0.6,
-                        ease: 'power2.out',
-                        delay: 0.4
-                    });
-
-                    // Bar fill
-                    setTimeout(() => {
-                        bar.style.width = targetValue + '%';
-                        
-                        // Count up animation
-                        let current = 0;
-                        const interval = setInterval(() => {
-                            current += targetValue / 40;
-                            if (current >= targetValue) {
-                                current = targetValue;
-                                clearInterval(interval);
-                            }
-                            valueDisplay.textContent = Math.round(current) + '%';
-                        }, 50);
-                    }, 600);
-
-                }, i * 1200);
-            });
-
-            setTimeout(() => showStage3(), 7000);
+function stage2() {
+    // Style-based filtering - Center: Shape of You (style: 83)
+    const center = SONGS[centerSongIndex];
+    
+    nodes.forEach((node, i) => {
+        const song = node.userData.song;
+        const diff = Math.abs(song.style - center.style);
+        const distance = (diff / 40) * 5;
+        
+        const angle = (i / SONGS.length) * Math.PI * 2;
+        
+        gsap.to(node.position, {
+            x: (song.style - center.style) / 25,
+            y: Math.cos(angle) * distance,
+            z: Math.sin(angle) * distance,
+            duration: 2.5,
+            ease: 'power2.inOut'
+        });
+        
+        if (i === centerSongIndex) {
+            gsap.to(node.position, { x: 0, y: 0, z: 0, duration: 2 });
+            node.userData.label.className = 'node-label center visible';
+            gsap.to(node.material.color, { r: 1, g: 0, b: 0.5, duration: 1 });
+            gsap.to(node.material.emissive, { r: 1, g: 0, b: 0.5, duration: 1 });
         }
+    });
+}
 
-        // Stage 3: Build Radar Chart
-        function showStage3() {
-            updateStatus('Step 3: Building Feature Profile', 50);
-            
-            stage.innerHTML = `
-                <div class="chart-stage">
-                    <div class="chart-container">
-                        <div class="chart-glow"></div>
-                        <canvas id="radarChart" width="600" height="600"></canvas>
-                    </div>
-                    <div class="chart-explanation">
-                        <div class="chart-title">Audio Feature Profile</div>
-                        <div class="chart-desc">
-                            4가지 오디오 피처를 레이더 차트로 시각화합니다. 
-                            이 프로필을 기준으로 유사한 곡을 찾아냅니다.
-                        </div>
-                        <div class="legend-grid">
-                            ${Object.keys(DATA.base.features).map((key, i) => {
-                                const f = DATA.base.features[key];
-                                return `
-                                    <div class="legend-item">
-                                        <div class="legend-color" style="--color1: var(--color${i+1}); --color2: var(--color${i+1});"></div>
-                                        <div>
-                                            <div class="legend-text">${f.label}</div>
-                                            <div style="font-size: 13px; color: rgba(255,255,255,0.5);">${f.value}%</div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            gsap.to('.chart-stage', { opacity: 1, duration: 0.8 });
-
-            setTimeout(() => {
-                const ctx = document.getElementById('radarChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'radar',
-                    data: {
-                        labels: ['Feeling', 'Style', 'Sound', 'Preference'],
-                        datasets: [{
-                            data: [42.8, 58.5, 84.2, 85],
-                            backgroundColor: 'rgba(168, 85, 247, 0.2)',
-                            borderColor: '#a855f7',
-                            borderWidth: 4,
-                            pointBackgroundColor: ['#ff0080', '#00d4ff', '#a855f7', '#ffd700'],
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 3,
-                            pointRadius: 12,
-                            pointHoverRadius: 16
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        scales: {
-                            r: {
-                                beginAtZero: true,
-                                max: 100,
-                                ticks: {
-                                    stepSize: 25,
-                                    color: 'rgba(255,255,255,0.3)',
-                                    backdropColor: 'transparent',
-                                    font: { size: 14 }
-                                },
-                                grid: { color: 'rgba(255,255,255,0.1)', lineWidth: 2 },
-                                angleLines: { color: 'rgba(255,255,255,0.1)', lineWidth: 2 },
-                                pointLabels: {
-                                    color: '#fff',
-                                    font: { size: 20, weight: 'bold' }
-                                }
-                            }
-                        },
-                        plugins: { legend: { display: false } },
-                        animation: { duration: 2000, easing: 'easeOutQuart' }
-                    }
-                });
-            }, 500);
-
-            setTimeout(() => showStage4(), 5000);
+function stage3() {
+    // Sound-based filtering - Center: Blinding Lights (sound: 73)
+    const center = SONGS[centerSongIndex];
+    
+    nodes.forEach((node, i) => {
+        const song = node.userData.song;
+        const diff = Math.abs(song.sound - center.sound);
+        const distance = (diff / 40) * 5;
+        
+        const angle = (i / SONGS.length) * Math.PI * 2;
+        
+        gsap.to(node.position, {
+            x: Math.cos(angle) * distance,
+            y: Math.sin(angle) * distance,
+            z: (song.sound - center.sound) / 25,
+            duration: 2.5,
+            ease: 'power2.inOut'
+        });
+        
+        if (i === centerSongIndex) {
+            gsap.to(node.position, { x: 0, y: 0, z: 0, duration: 2 });
+            node.userData.label.className = 'node-label center visible';
+            gsap.to(node.material.color, { r: 1, g: 0, b: 0.5, duration: 1 });
+            gsap.to(node.material.emissive, { r: 1, g: 0, b: 0.5, duration: 1 });
         }
+    });
+}
 
-        // Stage 4: Search
-        function showStage4() {
-            updateStatus('Step 4: Searching Similar Tracks', 65);
-            
-            const candidates = [
-                { name: "Blinding Lights", initial: "BL", angle: 0 },
-                { name: "Levitating", initial: "LV", angle: 90 },
-                { name: "Closer", initial: "CL", angle: 180 },
-                { name: "Shape of You", initial: "SY", angle: 270 },
-                { name: "Other 1", initial: "O1", angle: 45 },
-                { name: "Other 2", initial: "O2", angle: 135 },
-                { name: "Other 3", initial: "O3", angle: 225 },
-                { name: "Other 4", initial: "O4", angle: 315 }
-            ];
-
-            stage.innerHTML = `
-                <div class="search-stage">
-                    <div class="center-node">${DATA.base.initial}</div>
-                    <div class="wave-circle w1"></div>
-                    <div class="wave-circle w2"></div>
-                    <div class="wave-circle w3"></div>
-                    <div class="wave-circle w4"></div>
-                    ${candidates.map((c, i) => {
-                        const angle = c.angle * Math.PI / 180;
-                        const x = 450 + Math.cos(angle - Math.PI/2) * 320;
-                        const y = 450 + Math.sin(angle - Math.PI/2) * 320;
-                        return `
-                            <div class="candidate-node" style="left: ${x-45}px; top: ${y-45}px;">
-                                <div class="node-initial">${c.initial}</div>
-                                <div>${c.name}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-
-            gsap.to('.search-stage', { opacity: 1, duration: 0.8 });
-
-            // Wave animation
-            gsap.to('.wave-circle', {
-                width: 700,
-                height: 700,
-                opacity: 0.6,
-                duration: 2,
-                stagger: 0.3,
-                repeat: 1,
-                yoyo: true,
-                ease: 'power2.out'
-            });
-
-            // Show candidates
-            gsap.to('.candidate-node', {
-                opacity: 0.6,
-                duration: 0.5,
-                stagger: 0.1,
-                delay: 1
-            });
-
-            // Highlight top 4
-            setTimeout(() => {
-                [0, 1, 2, 3].forEach((idx, i) => {
-                    setTimeout(() => {
-                        document.querySelectorAll('.candidate-node')[idx].classList.add('highlighted');
-                    }, i * 200);
-                });
-            }, 3000);
-
-            setTimeout(() => showStage5(), 6000);
+function stage4() {
+    // Final - Combined score (back to Sorry as center)
+    const center = SONGS[centerSongIndex];
+    
+    // Calculate distances for all songs
+    const distances = nodes.map((node, i) => {
+        const song = node.userData.song;
+        const feelDiff = Math.abs(song.feeling - center.feeling);
+        const styleDiff = Math.abs(song.style - center.style);
+        const soundDiff = Math.abs(song.sound - center.sound);
+        const prefDiff = Math.abs(song.preference - center.preference);
+        
+        const totalDiff = Math.sqrt(
+            feelDiff**2 + styleDiff**2 + soundDiff**2 + prefDiff**2
+        );
+        
+        return { index: i, distance: totalDiff };
+    });
+    
+    distances.sort((a, b) => a.distance - b.distance);
+    const top4Indices = distances.slice(1, 5).map(d => d.index); // Skip center (index 0)
+    
+    nodes.forEach((node, i) => {
+        const song = node.userData.song;
+        const distanceData = distances.find(d => d.index === i);
+        const distance = (distanceData.distance / 80) * 4;
+        
+        const angle = (i / SONGS.length) * Math.PI * 2;
+        
+        gsap.to(node.position, {
+            x: Math.cos(angle) * distance,
+            y: (distanceData.distance - 60) / 35,
+            z: Math.sin(angle) * distance,
+            duration: 2.5,
+            ease: 'power2.inOut'
+        });
+        
+        const isTop4 = top4Indices.includes(i);
+        const isCenter = (i === centerSongIndex);
+        
+        if (isCenter) {
+            node.userData.label.className = 'node-label center visible';
+            gsap.to(node.material.color, { r: 1, g: 0, b: 0.5, duration: 1 });
+            gsap.to(node.material.emissive, { r: 1, g: 0, b: 0.5, duration: 1 });
+            gsap.to(node.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 1 });
+        } else if (isTop4) {
+            node.userData.label.className = 'node-label final visible';
+            gsap.to(node.material.color, { r: 1, g: 0.84, b: 0, duration: 1 });
+            gsap.to(node.material.emissive, { r: 1, g: 0.84, b: 0, duration: 1 });
+            gsap.to(node.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 1, ease: 'elastic.out(1, 0.5)' });
+        } else {
+            gsap.to(node.material, { opacity: 0.2, transparent: true, duration: 1.5 });
+            setTimeout(() => showNodeLabel(i, false), 1000);
         }
+    });
+}
 
-        // Stage 5: Comparison
-        function showStage5() {
-            updateStatus('Step 5: Comparing Weight Scenarios', 90);
-            
-            stage.innerHTML = `
-                <div class="comparison-stage">
-                    <div class="comparison-header">
-                        <div class="comparison-main-title">가중치 조절 영향 비교</div>
-                        <div class="comparison-subtitle">Weight Adjustment Impact Analysis</div>
-                    </div>
-                    <div class="scenarios-grid">
-                        ${renderScenario('before', 'Before', '균등 가중치', DATA.scenario1)}
-                        ${renderScenario('after', 'After', '조정된 가중치', DATA.scenario2)}
-                    </div>
-                </div>
-            `;
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-            gsap.to('.comparison-stage', { opacity: 1, duration: 0.8 });
-
-            setTimeout(() => {
-                document.querySelectorAll('.contrib-segment').forEach(seg => {
-                    const w = seg.style.width;
-                    seg.style.width = '0%';
-                    gsap.to(seg, { width: w, duration: 1.5, ease: 'power2.out' });
-                });
-            }, 1000);
-
-            setTimeout(() => {
-                updateStatus('XAI Visualization Complete', 100);
-            }, 3000);
-        }
-
-        function renderScenario(className, label, title, data) {
-            return `
-                <div class="scenario-box ${className}">
-                    <div class="scenario-label">${label}</div>
-                    <div class="scenario-title-text">${title}</div>
-                    <div class="weights-info">
-                        <div class="weight-pill">Feeling: ${data.weights.feeling}%</div>
-                        <div class="weight-pill">Style: ${data.weights.style}%</div>
-                        <div class="weight-pill">Sound: ${data.weights.sound}%</div>
-                        <div class="weight-pill">Preference: ${data.weights.preference}%</div>
-                    </div>
-                    <div class="results-list-comparison">
-                        ${data.results.map((r, i) => `
-                            <div class="result-item-comparison">
-                                <div class="result-rank-badge">${i+1}</div>
-                                <div class="result-content-comparison">
-                                    <div class="result-track-title">${r.name}</div>
-                                    <div class="result-artist-subtitle">${r.artist}</div>
-                                    <div class="result-match-percent">${r.match}%</div>
-                                    <div class="contrib-visualization">
-                                        ${r.contrib.map((c, j) => `<div class="contrib-segment seg${j+1}" style="width: ${c}%"></div>`).join('')}
-                                    </div>
-                                    <div class="contrib-labels">
-                                        <span><div class="contrib-dot d1"></div>Feeling ${r.contrib[0]}%</span>
-                                        <span><div class="contrib-dot d2"></div>Style ${r.contrib[1]}%</span>
-                                        <span><div class="contrib-dot d3"></div>Sound ${r.contrib[2]}%</span>
-                                        <span><div class="contrib-dot d4"></div>Pref ${r.contrib[3]}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Start
-        showStage1();
-    </script>
+// Start the show
+initApp();
+</script>
 </body>
 </html>
