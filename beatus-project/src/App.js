@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import './App.css';
 
+const API_KEY = process.env.REACT_APP_API_KEY;
+
 function App() {
   // 상태 관리
   const [selectedImages, setSelectedImages] = useState([]); // 여러 장
@@ -122,7 +124,7 @@ function App() {
   };
 
 
-// 일기 생성 (Gemini API 버전)
+// 일기 생성 (OpenAI API 버전)
 const generateDiary = async () => {
   if (selectedImages.length === 0) {
     alert('사진을 최소 3장 이상 선택하세요!');
@@ -151,10 +153,8 @@ const generateDiary = async () => {
           reader.onload = (e) => {
             const base64Image = e.target.result.split(',')[1];
             resolve({
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: base64Image
-              }
+              type: "input_image",
+              image_url: `data:image/jpeg;base64,${base64Image}`
             });
           };
           reader.readAsDataURL(file);
@@ -162,49 +162,32 @@ const generateDiary = async () => {
       })
     );
 
-    // Gemini API 호출
-    const API_KEY = 'YOUR_GEMINI_API_KEY_HERE'; // ← 여기에 Gemini API 키 넣기!
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+    // ⬇⬇⬇ 여기만 OpenAI API로 바꾼 부분 (너는 이 부분만 보이면 됨) ⬇⬇⬇
+        const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              ...imageParts, // 모든 이미지
-              {
-                text: `이 ${selectedImages.length}장의 사진들을 보고 오늘 하루를 회상하는 감성적인 일기를 작성해줘.
-
-오늘의 기분: ${mood}
-
-위 기분을 반영해서 250자 정도로 따뜻하고 감성적인 일기를 작성해줘. 
-사진들 속의 순간들을 자연스럽게 이어서 하나의 이야기로 만들어줘.
-기분에 공감하면서 위로하거나 함께 기뻐하는 느낌으로 써줘.`
-              }
-            ]
-          }]
-        })
-      }
-    );
+        headers: { 'Content-Type': 'application/json' },
+        
+      body: JSON.stringify({
+        model: "gpt-4.1-mini", // 원하면 변경 가능. 기본은 가볍고 빠름
+        input: [
+          ...imageParts,
+          {
+            type: "input_text",
+            text: `이 ${selectedImages.length}장의 사진들을 보고 사용자의 기분은 "${mood}" 입니다. 
+            위 기분을 반영해서 200-300자로 오늘 한 일을 전체적인 기분에 맞춰서 따뜻하고 너무 짧지 않은 문장으로 써줘. 감동적으로 작성해줘. 기분이 부정적이라면 위로의 문구를 일기에 포함해줘. 기분이 부정적일때는 오늘 하루를 성찰하는 톤으로 작성해주고, 기분이 긍정적이라면, 희망과 기쁨이 묻어나는 톤으로 작성해줘. 문학적인 표현은 줄이고 이모티콘사용도 자제해줘. -습니다 체말고 -다 체로 써줘. 학술적인 용어나 전문적인 용어말고 일상적인 단어로 구성해줘. 괄호친 부분, 사진분석한 내용은 일기에서 빼줘.`
+          }
+        ]
+      })
+    });
+    // ⬆⬆⬆ API 연결 끝 ⬆⬆⬆
 
     const data = await response.json();
-    
-    // Gemini 응답 파싱
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const diaryText = data.candidates[0].content.parts[0].text;
-      const randomQuote = getRandomQuote();
-      
-      setDiary(diaryText + '\n\n✨ ' + randomQuote);
-    } else {
-      throw new Error('AI 응답을 받을 수 없습니다.');
-    }
-    
-  } catch (error) {
-    setDiary('오류가 발생했습니다: ' + error.message);
+    setDiary(data.output_text || "일기를 생성할 수 없습니다. 다시 시도해주세요.");
+  } catch (err) {
+    console.error(err);
+    setDiary("오류가 발생했습니다. 다시 시도해주세요.");
   } finally {
     setLoading(false);
   }
