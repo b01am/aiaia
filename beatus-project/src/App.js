@@ -124,18 +124,16 @@ function App() {
   };
 
 
-// 일기 생성 (OpenAI API 버전)
+// 일기 생성 (Gemini API 버전)
 const generateDiary = async () => {
   if (selectedImages.length === 0) {
     alert('사진을 최소 3장 이상 선택하세요!');
     return;
   }
-
   if (selectedImages.length < 3) {
     alert('사진이 부족해요! 최소 3장 이상 선택해주세요!');
     return;
   }
-
   if (!mood) {
     alert('기분을 선택하세요!');
     return;
@@ -145,7 +143,7 @@ const generateDiary = async () => {
   setDiary('AI가 사진들을 분석하고 일기를 작성하고 있습니다...');
 
   try {
-    // 모든 이미지를 Base64로 변환
+    // 1. 모든 이미지를 Base64로 변환 (Gemini API 형식으로 수정)
     const imageParts = await Promise.all(
       selectedImages.map(file => {
         return new Promise((resolve) => {
@@ -153,8 +151,10 @@ const generateDiary = async () => {
           reader.onload = (e) => {
             const base64Image = e.target.result.split(',')[1];
             resolve({
-              type: "input_image",
-              image_url: `data:image/jpeg;base64,${base64Image}`
+              inlineData: {
+                data: base64Image,
+                mimeType: file.type // 파일의 MIME 타입을 사용 (예: image/jpeg)
+              }
             });
           };
           reader.readAsDataURL(file);
@@ -162,29 +162,36 @@ const generateDiary = async () => {
       })
     );
 
-    // ⬇⬇⬇ 여기만 OpenAI API로 바꾼 부분 (너는 이 부분만 보이면 됨) ⬇⬇⬇
-        const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`,
+    // 2. API 호출 (Gemini API Endpoint 및 Body 구조 사용)
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         
-      body: JSON.stringify({
-        model: "gpt-4.1-mini", // 원하면 변경 가능. 기본은 가볍고 빠름
-        input: [
-          ...imageParts,
-          {
-            type: "input_text",
-            text: `이 ${selectedImages.length}장의 사진들을 보고 사용자의 기분은 "${mood}" 입니다. 
-            위 기분을 반영해서 200-300자로 오늘 한 일을 전체적인 기분에 맞춰서 따뜻하고 너무 짧지 않은 문장으로 써줘. 감동적으로 작성해줘. 기분이 부정적이라면 위로의 문구를 일기에 포함해줘. 기분이 부정적일때는 오늘 하루를 성찰하는 톤으로 작성해주고, 기분이 긍정적이라면, 희망과 기쁨이 묻어나는 톤으로 작성해줘. 문학적인 표현은 줄이고 이모티콘사용도 자제해줘. -습니다 체말고 -다 체로 써줘. 학술적인 용어나 전문적인 용어말고 일상적인 단어로 구성해줘. 괄호친 부분, 사진분석한 내용은 일기에서 빼줘.`
-          }
-        ]
-      })
-    });
-    // ⬆⬆⬆ API 연결 끝 ⬆⬆⬆
+        body: JSON.stringify({
+          // 🚨 model 필드는 URL에 지정했으므로 Body에서 제거
+          contents: [{
+            
+            parts: [
+              ...imageParts, // 변환된 이미지 parts 배열
+              {
+                text: `이 ${selectedImages.length}장의 사진들을 보고 사용자의 기분은 "${mood}" 입니다. 
+                위 기분을 반영해서 200-300자로 오늘 한 일을 전체적인 기분에 맞춰서 따뜻하고 너무 짧지 않은 문장으로 써줘. 감동적으로 작성해줘. 기분이 부정적이라면 위로의 문구를 일기에 포함해줘. 기분이 부정적일때는 오늘 하루를 성찰하는 톤으로 작성해주고, 기분이 긍정적이라면, 희망과 기쁨이 묻어나는 톤으로 작성해줘. 문학적인 표현은 줄이고 이모티콘사용도 자제해줘. -습니다 체말고 -다 체로 써줘. 학술적인 용어나 전문적인 용어말고 일상적인 단어로 구성해줘. 괄호친 부분, 사진분석한 내용은 일기에서 빼줘.`
+              }
+            ]
+          }]
+        })
+      }
+    );
 
     const data = await response.json();
-    setDiary(data.output_text || "일기를 생성할 수 없습니다. 다시 시도해주세요.");
+    console.log(data); // 응답 구조 확인용 (디버깅 시 유용)
+
+    // 3. 결과 파싱 (Gemini API 응답 구조에 맞게 수정)
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    setDiary(generatedText || data.error?.message || "일기를 생성할 수 없습니다. 다시 시도해주세요.");
+
   } catch (err) {
     console.error(err);
     setDiary("오류가 발생했습니다. 다시 시도해주세요.");
@@ -192,7 +199,6 @@ const generateDiary = async () => {
     setLoading(false);
   }
 };
-
 
   // 이미지로 저장
   const saveAsImage = () => {
