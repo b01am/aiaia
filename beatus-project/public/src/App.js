@@ -9,7 +9,6 @@ function App() {
   const [imagePreviews, setImagePreviews] = useState([]); // 여러 장 미리보기
   const [mood, setMood] = useState(''); // 1개만
   const [diary, setDiary] = useState('');
-  const [quote, setQuote] = useState(''); // 명언 상태 추가
   const [loading, setLoading] = useState(false);
   const [selectedFont, setSelectedFont] = useState('Nanum Pen Script');
   
@@ -124,96 +123,87 @@ function App() {
     return quotesForMood[Math.floor(Math.random() * quotesForMood.length)];
   };
 
-  // 일기 생성 (Gemini API 버전) - 수정됨
-  const generateDiary = async () => {
-    if (selectedImages.length < 3) {
-      alert('사진을 최소 3장 이상 선택하세요!');
-      return;
-    }
-    if (!mood) {
-      alert('기분을 선택하세요!');
-      return;
-    }
 
-    setLoading(true);
-    setDiary('AI가 사진들을 분석하고 일기를 작성하고 있습니다...');
+// 일기 생성 (OpenAI API 버전)
+const generateDiary = async () => {
+  if (selectedImages.length < 3) {
+    alert('사진을 최소 3장 이상 선택하세요!');
+    return;
+  }
+  if (!mood) {
+    alert('기분을 선택하세요!');
+    return;
+  }
 
-    try {
-      // Base64 변환
-      const imageParts = await Promise.all(
-        selectedImages.map(
-          file =>
-            new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = e => {
-                const base64 = e.target.result.split(',')[1];
-                resolve({
-                  inline_data: {
-                    mime_type: file.type || "image/jpeg",
-                    data: base64
-                  }
-                });
-              };
-              reader.readAsDataURL(file);
-            }),
-        ),
-      );
+  setLoading(true);
+  setDiary('AI가 사진들을 분석하고 일기를 작성하고 있습니다...');
 
-      // Gemini API 호출 (수정된 부분)
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-        {
-          method: 'POST',
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  ...imageParts,
-                  {
-                    text: `
-사용자의 기분은 "${mood}"이다. 
+  try {
+    // Base64 변환
+    const imageParts = await Promise.all(
+      selectedImages.map(
+        file =>
+          new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => {
+              const base64 = e.target.result.split(',')[1];
+              resolve({
+                inline_data: {
+                  mime_type: "image/jpeg",
+                  data: base64
+                }
+              });
+            };
+            reader.readAsDataURL(file);
+          }),
+      ),
+    );
+
+    // Gemini 전용 API 형식
+    const response = await fetch(
+      fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`)
+,
+      {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                ...imageParts,
+                {
+                  text: `
+사용자의 기분은 ${mood}이다. 
 ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써라.
 - '다' 체로 작성
 - 이모티콘 금지
 - 사진 내용 직접 설명 금지
 - 기분이 부정적이면 위로 포함
 - 기분이 긍정적이면 따뜻하고 희망적인 톤
-- 자연스럽고 감성적인 문장으로 작성
 `
-                  }
-                ]
-              }
-            ]
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'API 호출 실패');
+                }
+              ]
+            }
+          ]
+        })
       }
+    );
 
-      const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (output) {
-        setDiary(output);
-        // 명언도 함께 생성
-        const selectedQuote = getRandomQuote();
-        setQuote(selectedQuote);
-      } else {
-        setDiary("일기를 생성할 수 없습니다. 다시 시도해주세요.");
-      }
-    } catch (err) {
-      console.error('API 오류:', err);
-      setDiary(`오류가 발생했습니다: ${err.message}\n\nAPI 키를 확인해주세요.`);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const data = await response.json();
 
-  // 이미지로 저장 (수정 및 개선)
+    const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    setDiary(output || "일기를 생성할 수 없습니다. 다시 시도해주세요.");
+  } catch (err) {
+    console.error(err);
+    setDiary("오류가 발생했습니다. 다시 시도해주세요.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  // 이미지로 저장
   const saveAsImage = () => {
     if (!diary || diary === '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫') {
       alert('먼저 일기를 생성해주세요!');
@@ -225,78 +215,45 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
     
     // 캔버스 크기 설정
     canvas.width = 800;
-    canvas.height = 1400;
+    canvas.height = 1200;
     
-    // 배경 그라데이션 (세련된 디자인)
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#FFF9E6');
-    gradient.addColorStop(1, '#FFE8CC');
-    ctx.fillStyle = gradient;
+    // 배경 그리기 (노트 느낌)
+    ctx.fillStyle = '#FFF9E6';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 장식 테두리
-    ctx.strokeStyle = '#D4A574';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-    
-    // 내부 테두리
-    ctx.strokeStyle = '#E8D4B8';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
-    
-    // 제목 영역 배경
-    ctx.fillStyle = 'rgba(212, 165, 116, 0.1)';
-    ctx.fillRect(40, 40, canvas.width - 80, 140);
+    // 테두리
+    ctx.strokeStyle = '#DDD';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
     
     // 제목
-    ctx.fillStyle = '#5D4E37';
-    ctx.font = 'bold 48px "Nanum Pen Script"';
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 40px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText('📸 오늘의 일기', canvas.width / 2, 100);
+    ctx.fillText('📸 오늘의 일기', canvas.width / 2, 80);
     
     // 날짜
-    const today = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
-    });
-    ctx.font = '26px "Nanum Pen Script"';
-    ctx.fillStyle = '#8B7355';
-    ctx.fillText(today, canvas.width / 2, 145);
+    const today = new Date().toLocaleDateString('ko-KR');
+    ctx.font = '24px Inter';
+    ctx.fillText(today, canvas.width / 2, 120);
     
-    // 기분 표시 (이모지 포함)
+    // 기분 표시
     if (mood) {
-      const selectedMoodOption = moodOptions.find(opt => opt.value === mood);
-      ctx.font = '28px "Nanum Pen Script"';
-      ctx.fillStyle = '#5D4E37';
-      ctx.fillText(`오늘의 기분: ${selectedMoodOption?.emoji || ''} ${mood}`, canvas.width / 2, 210);
+      ctx.font = '22px Inter';
+      ctx.fillText(`오늘의 기분: ${mood}`, canvas.width / 2, 160);
     }
     
-    // 구분선
-    ctx.strokeStyle = '#D4A574';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(80, 240);
-    ctx.lineTo(canvas.width - 80, 240);
-    ctx.stroke();
-    
     // 일기 내용 (선택한 필기체 폰트로)
-    ctx.font = `32px "${selectedFont}"`;
-    ctx.fillStyle = '#2C2416';
+    ctx.font = `28px "${selectedFont}"`;
+    ctx.fillStyle = '#222';
     ctx.textAlign = 'left';
     
     const lines = diary.split('\n');
-    const lineHeight = 50;
-    const maxWidth = canvas.width - 140;
-    let y = 300;
+    const lineHeight = 45;
+    const maxWidth = canvas.width - 100;
+    let y = 220;
     
     lines.forEach(line => {
-      if (!line.trim()) {
-        y += lineHeight * 0.5; // 빈 줄은 반만 띄우기
-        return;
-      }
-      
       const words = line.split('');
       let currentLine = '';
       
@@ -305,7 +262,7 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         const metrics = ctx.measureText(testLine);
         
         if (metrics.width > maxWidth && currentLine !== '') {
-          ctx.fillText(currentLine, 70, y);
+          ctx.fillText(currentLine, 50, y);
           currentLine = char;
           y += lineHeight;
         } else {
@@ -313,60 +270,15 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         }
       });
       
-      if (currentLine) {
-        ctx.fillText(currentLine, 70, y);
-        y += lineHeight;
-      }
+      ctx.fillText(currentLine, 50, y);
+      y += lineHeight;
     });
-    
-    // 명언 영역 (하단)
-    if (quote) {
-      y += 40; // 일기와 명언 사이 간격
-      
-      // 명언 배경
-      ctx.fillStyle = 'rgba(212, 165, 116, 0.15)';
-      const quoteBoxHeight = 180;
-      ctx.fillRect(50, y - 30, canvas.width - 100, quoteBoxHeight);
-      
-      // 장식 아이콘
-      ctx.font = '40px Arial';
-      ctx.fillText('💭', canvas.width / 2 - 20, y + 10);
-      
-      // 명언 텍스트
-      ctx.font = '26px "Nanum Pen Script"';
-      ctx.fillStyle = '#5D4E37';
-      ctx.textAlign = 'center';
-      
-      // 명언을 여러 줄로 나누기
-      const quoteWords = quote.split(' ');
-      let quoteLine = '';
-      let quoteY = y + 60;
-      const quoteMaxWidth = canvas.width - 140;
-      
-      quoteWords.forEach((word, index) => {
-        const testLine = quoteLine + word + ' ';
-        const metrics = ctx.measureText(testLine);
-        
-        if (metrics.width > quoteMaxWidth && quoteLine !== '') {
-          ctx.fillText(quoteLine.trim(), canvas.width / 2, quoteY);
-          quoteLine = word + ' ';
-          quoteY += 35;
-        } else {
-          quoteLine = testLine;
-        }
-      });
-      
-      if (quoteLine) {
-        ctx.fillText(quoteLine.trim(), canvas.width / 2, quoteY);
-      }
-    }
     
     // 이미지로 변환 및 다운로드
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      const dateStr = new Date().toLocaleDateString('ko-KR').replace(/\. /g, '-').replace('.', '');
-      link.download = `AI일기_${dateStr}.png`;
+      link.download = `일기_${today}.png`;
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
@@ -470,14 +382,6 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         >
           {diary || '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫'}
         </div>
-        
-        {/* 명언 표시 */}
-        {quote && (
-          <div className="quote-section">
-            <div className="quote-icon">💭</div>
-            <p className="quote-text">{quote}</p>
-          </div>
-        )}
       </div>
 
       {/* 이미지 저장 버튼 */}

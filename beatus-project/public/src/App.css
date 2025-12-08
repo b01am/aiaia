@@ -95,11 +95,6 @@ h1 {
   border-radius: 15px;
   border: 1px solid #222;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease;
-}
-
-.preview-grid .preview-image:hover {
-  transform: scale(1.05);
 }
 
 /* 기분 선택 섹션 */
@@ -276,44 +271,6 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 명언 섹션 (새로 추가) */
-.quote-section {
-  margin-top: 30px;
-  padding: 25px 30px;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
-  border-radius: 16px;
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  position: relative;
-  backdrop-filter: blur(5px);
-}
-
-.quote-icon {
-  font-size: 2rem;
-  text-align: center;
-  margin-bottom: 10px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.quote-text {
-  color: #f0f0f0;
-  font-size: 18px;
-  line-height: 1.7;
-  text-align: center;
-  font-style: italic;
-  font-weight: 500;
-  margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
 /* 저장 버튼 */
 .save-button {
   background: linear-gradient(135deg, #6BCB77, #4D96FF);
@@ -391,14 +348,6 @@ h1 {
   .diary-content {
     padding: 25px;
     font-size: 18px;
-  }
-  
-  .quote-section {
-    padding: 20px;
-  }
-  
-  .quote-text {
-    font-size: 16px;
   }
 }
 
