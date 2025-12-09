@@ -81,7 +81,6 @@ h1 {
   max-width: 900px;
 }
 
-/* 사진 미리보기 그리드 (여러 장) */
 .preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -154,7 +153,6 @@ h1 {
 
 .mood-emoji {
   font-size: 2.5rem;
-  filter: grayscale(0);
 }
 
 .mood-text {
@@ -166,33 +164,6 @@ h1 {
 .mood-item.selected .mood-text {
   color: #ffffff;
   font-weight: 600;
-}
-
-/* 일기 생성 버튼 */
-.generate-button {
-  background: #ffffff;
-  color: #0a0a0a;
-  padding: 18px 60px;
-  border: none;
-  border-radius: 50px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  margin: 40px 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.generate-button:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
-}
-
-.generate-button:disabled {
-  background: #333;
-  color: #666;
-  cursor: not-allowed;
 }
 
 /* 필기체 선택 섹션 */
@@ -244,6 +215,33 @@ h1 {
   font-weight: bold;
 }
 
+/* 일기 생성 버튼 */
+.generate-button {
+  background: #ffffff;
+  color: #0a0a0a;
+  padding: 18px 60px;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 40px 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.generate-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
+}
+
+.generate-button:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
 /* 일기 결과 섹션 */
 .diary-section {
   max-width: 800px;
@@ -276,7 +274,7 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 명언 섹션 (새로 추가) */
+/* 명언 섹션 */
 .quote-section {
   margin-top: 30px;
   padding: 25px 30px;

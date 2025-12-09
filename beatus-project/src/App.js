@@ -1,22 +1,41 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
-const API_KEY = process.env.REACT_APP_API_KEY;
+const API_KEY = "AIzaSyBrhBiTSI-1wfiXqxtCkFoSsZ24bJTYtb4";
 
 function App() {
   // 상태 관리
-  const [selectedImages, setSelectedImages] = useState([]); // 여러 장
-  const [imagePreviews, setImagePreviews] = useState([]); // 여러 장 미리보기
-  const [mood, setMood] = useState(''); // 1개만
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [mood, setMood] = useState('');
+  const [selectedFont, setSelectedFont] = useState('Gaegu');
   const [diary, setDiary] = useState('');
-  const [quote, setQuote] = useState(''); // 명언 상태 추가
+  const [quote, setQuote] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedFont, setSelectedFont] = useState('Nanum Pen Script');
-  
-  const diaryRef = useRef(null);
 
-  // 기분별 명언
-  const quotesByMood = {
+  // 감정 옵션 (label로 명언 분류)
+  const moodOptions = [
+    { value: '행복해요', emoji: '😊', color: '#FFD93D', label: '행복' },
+    { value: '기분좋아요', emoji: '😄', color: '#6BCB77', label: '행복' },
+    { value: '설레요', emoji: '🥰', color: '#FFB4B4', label: '행복' },
+    { value: '평온해요', emoji: '😌', color: '#4D96FF', label: '일반' },
+    { value: '슬퍼요', emoji: '😢', color: '#95E1D3', label: '슬픔' },
+    { value: '우울해요', emoji: '😞', color: '#A8DADC', label: '슬픔' },
+    { value: '화나요', emoji: '😠', color: '#FF6B6B', label: '힘듦' },
+    { value: '피곤해요', emoji: '😴', color: '#C3B1E1', label: '힘듦' }
+  ];
+
+  // 필기체 옵션 (5개)
+  const fontOptions = [
+    { name: '개구쟁이', value: 'Gaegu' },
+    { name: '하믈렛', value: 'Hahmlet' },
+    { name: '연성', value: 'Yeon Sung' },
+    { name: '싱글데이', value: 'Single Day' },
+    { name: '흑백사진', value: 'Black And White Picture' }
+  ];
+
+  // 감정별 명언
+  const quotesByLabel = {
     '행복': [
       "이 세상에서 가장 행복한 사람은 일하는 사람, 사랑하는 사람, 희망이 있는 사람이다. -조셉 에디슨",
       "좋아하는 일을 하는 것은 자유요, 하는 일을 좋아하는 것은 행복이다. - 프랭크 타이거",
@@ -68,28 +87,7 @@ function App() {
     ]
   };
 
-  // 기분 옵션 (label 포함)
-  const moodOptions = [
-    { value: '행복해요', emoji: '😊', color: '#FFD93D', label: '행복' },
-    { value: '기분좋아요', emoji: '😄', color: '#6BCB77', label: '행복' },
-    { value: '설레요', emoji: '🥰', color: '#FFB4B4', label: '행복' },
-    { value: '평온해요', emoji: '😌', color: '#4D96FF', label: '일반' },
-    { value: '슬퍼요', emoji: '😢', color: '#95E1D3', label: '슬픔' },
-    { value: '우울해요', emoji: '😞', color: '#A8DADC', label: '슬픔' },
-    { value: '화나요', emoji: '😠', color: '#FF6B6B', label: '힘듦' },
-    { value: '피곤해요', emoji: '😴', color: '#C3B1E1', label: '힘듦' }
-  ];
-
-  // 폰트 옵션
-  const fontOptions = [
-    { name: '나눔손글씨 펜', value: 'Nanum Pen Script' },
-    { name: '나눔손글씨 붓', value: 'Nanum Brush Script' },
-    { name: '개구쟁이체', value: 'Gaegu' },
-    { name: '감자꽃체', value: 'Gamja Flower' },
-    { name: '하이멜로디', value: 'Hi Melody' },
-  ];
-
-  // 이미지 선택 처리 (여러 장)
+  // 사진 선택 (3장 이상)
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     
@@ -99,32 +97,22 @@ function App() {
     }
     
     setSelectedImages(files);
-    
-    // 미리보기 생성
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreviews(previews);
   };
 
-  // 기분 선택 처리 (1개만)
-  const handleMoodChange = (value) => {
-    setMood(value);
-  };
-
-  // 기분에 맞는 랜덤 명언 선택
+  // 명언 선택 (label 기반)
   const getRandomQuote = () => {
-    // 선택된 기분의 label 찾기
-    const selectedMoodOption = moodOptions.find(option => option.value === mood);
-    if (!selectedMoodOption) return "오늘도 좋은 하루 되세요.";
+    const selectedMood = moodOptions.find(option => option.value === mood);
+    if (!selectedMood) return "오늘도 좋은 하루 되세요.";
     
-    // 해당 label의 명언 리스트 가져오기
-    const quotesForMood = quotesByMood[selectedMoodOption.label];
-    if (!quotesForMood || quotesForMood.length === 0) return "오늘도 좋은 하루 되세요.";
+    const quotes = quotesByLabel[selectedMood.label];
+    if (!quotes || quotes.length === 0) return "오늘도 좋은 하루 되세요.";
     
-    // 랜덤 선택
-    return quotesForMood[Math.floor(Math.random() * quotesForMood.length)];
+    return quotes[Math.floor(Math.random() * quotes.length)];
   };
 
-  // 일기 생성 (Gemini API 버전) - 수정됨
+  // 일기 생성 (Gemini API v1beta)
   const generateDiary = async () => {
     if (selectedImages.length < 3) {
       alert('사진을 최소 3장 이상 선택하세요!');
@@ -137,85 +125,90 @@ function App() {
 
     setLoading(true);
     setDiary('AI가 사진들을 분석하고 일기를 작성하고 있습니다...');
+    setQuote('');
 
     try {
       // Base64 변환
       const imageParts = await Promise.all(
-        selectedImages.map(
-          file =>
-            new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = e => {
-                const base64 = e.target.result.split(',')[1];
-                resolve({
-                  inline_data: {
-                    mime_type: file.type || "image/jpeg",
-                    data: base64
-                  }
-                });
-              };
-              reader.readAsDataURL(file);
-            }),
-        ),
+        selectedImages.map(file =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+              const base64 = e.target.result.split(',')[1];
+              resolve({
+                inlineData: {
+                  mimeType: file.type || "image/jpeg",
+                  data: base64
+                }
+              });
+            };
+            reader.readAsDataURL(file);
+          })
+        )
       );
 
-      // Gemini API 호출 (수정된 부분)
+      // Gemini API 호출
+      console.log('🔄 API 호출 시작...');
+      console.log('📸 이미지 수:', selectedImages.length);
+      console.log('😊 기분:', mood);
+      
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
         {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  ...imageParts,
-                  {
-                    text: `
-사용자의 기분은 "${mood}"이다. 
-${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써라.
-- '다' 체로 작성
-- 이모티콘 금지
-- 사진 내용 직접 설명 금지
-- 기분이 부정적이면 위로 포함
-- 기분이 긍정적이면 따뜻하고 희망적인 톤
-- 자연스럽고 감성적인 문장으로 작성
-`
-                  }
-                ]
-              }
-            ]
+            contents: [{
+              parts: [
+                ...imageParts,
+                {
+                  text: `이 ${selectedImages.length}장의 사진들을 보고 사용자의 기분은 "${mood}" 입니다. 
+위 기분을 반영해서 200-300자로 오늘 한 일을 전체적인 기분에 맞춰서 따뜻하고 너무 짧지 않은 문장으로 써줘. 감동적으로 작성해줘. 기분이 부정적이라면 위로의 문구를 일기에 포함해줘. 기분이 부정적일때는 오늘 하루를 성찰하는 톤으로 작성해주고, 기분이 긍정적이라면, 희망과 기쁨이 묻어나는 톤으로 작성해줘. 문학적인 표현은 줄이고 이모티콘사용도 자제해줘. -습니다 체말고 -다 체로 써줘. 학술적인 용어나 전문적인 용어말고 일상적인 단어로 구성해줘. 괄호친 부분, 사진분석한 내용은 일기에서 빼줘.`
+                }
+              ]
+            }]
           })
         }
       );
 
+      console.log('📡 응답 상태:', response.status);
+      
       const data = await response.json();
+      console.log('📦 응답 데이터:', data);
 
       if (!response.ok) {
+        console.error('❌ API 오류:', data);
         throw new Error(data.error?.message || 'API 호출 실패');
       }
 
-      const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      // 응답 파싱
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      if (output) {
-        setDiary(output);
-        // 명언도 함께 생성
+      console.log('📝 생성된 일기:', generatedText);
+      
+      if (generatedText) {
+        setDiary(generatedText);
         const selectedQuote = getRandomQuote();
         setQuote(selectedQuote);
+        console.log('✅ 일기 생성 완료!');
+        console.log('💭 명언:', selectedQuote);
       } else {
-        setDiary("일기를 생성할 수 없습니다. 다시 시도해주세요.");
+        console.error('❌ 응답에서 텍스트를 찾을 수 없음:', data);
+        setDiary(data.error?.message || "일기를 생성할 수 없습니다. 다시 시도해주세요.");
+        setQuote('');
       }
     } catch (err) {
-      console.error('API 오류:', err);
-      setDiary(`오류가 발생했습니다: ${err.message}\n\nAPI 키를 확인해주세요.`);
+      console.error('❌ 오류:', err);
+      setDiary(`오류 발생: ${err.message}\n\nAPI 키를 확인하세요!`);
+      setQuote('');
     } finally {
       setLoading(false);
     }
   };
 
-  // 이미지로 저장 (수정 및 개선)
+  // 이미지 저장
   const saveAsImage = () => {
-    if (!diary || diary === '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫') {
+    if (!diary || loading) {
       alert('먼저 일기를 생성해주세요!');
       return;
     }
@@ -223,34 +216,32 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
-    // 캔버스 크기 설정
     canvas.width = 800;
-    canvas.height = 1400;
+    canvas.height = quote ? 1400 : 1200;
     
-    // 배경 그라데이션 (세련된 디자인)
+    // 배경
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, '#FFF9E6');
     gradient.addColorStop(1, '#FFE8CC');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 장식 테두리
+    // 테두리
     ctx.strokeStyle = '#D4A574';
     ctx.lineWidth = 3;
     ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
     
-    // 내부 테두리
     ctx.strokeStyle = '#E8D4B8';
     ctx.lineWidth = 1;
     ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
     
-    // 제목 영역 배경
+    // 제목 배경
     ctx.fillStyle = 'rgba(212, 165, 116, 0.1)';
     ctx.fillRect(40, 40, canvas.width - 80, 140);
     
     // 제목
     ctx.fillStyle = '#5D4E37';
-    ctx.font = 'bold 48px "Nanum Pen Script"';
+    ctx.font = `bold 48px "${selectedFont}"`;
     ctx.textAlign = 'center';
     ctx.fillText('📸 오늘의 일기', canvas.width / 2, 100);
     
@@ -261,14 +252,14 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
       day: 'numeric',
       weekday: 'long'
     });
-    ctx.font = '26px "Nanum Pen Script"';
+    ctx.font = `26px "${selectedFont}"`;
     ctx.fillStyle = '#8B7355';
     ctx.fillText(today, canvas.width / 2, 145);
     
-    // 기분 표시 (이모지 포함)
+    // 기분
     if (mood) {
       const selectedMoodOption = moodOptions.find(opt => opt.value === mood);
-      ctx.font = '28px "Nanum Pen Script"';
+      ctx.font = `28px "${selectedFont}"`;
       ctx.fillStyle = '#5D4E37';
       ctx.fillText(`오늘의 기분: ${selectedMoodOption?.emoji || ''} ${mood}`, canvas.width / 2, 210);
     }
@@ -281,7 +272,7 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
     ctx.lineTo(canvas.width - 80, 240);
     ctx.stroke();
     
-    // 일기 내용 (선택한 필기체 폰트로)
+    // 일기
     ctx.font = `32px "${selectedFont}"`;
     ctx.fillStyle = '#2C2416';
     ctx.textAlign = 'left';
@@ -293,14 +284,14 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
     
     lines.forEach(line => {
       if (!line.trim()) {
-        y += lineHeight * 0.5; // 빈 줄은 반만 띄우기
+        y += lineHeight * 0.5;
         return;
       }
       
-      const words = line.split('');
+      const chars = line.split('');
       let currentLine = '';
       
-      words.forEach(char => {
+      chars.forEach(char => {
         const testLine = currentLine + char;
         const metrics = ctx.measureText(testLine);
         
@@ -319,49 +310,44 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
       }
     });
     
-    // 명언 영역 (하단)
+    // 명언
     if (quote) {
-      y += 40; // 일기와 명언 사이 간격
+      y += 40;
       
-      // 명언 배경
       ctx.fillStyle = 'rgba(212, 165, 116, 0.15)';
-      const quoteBoxHeight = 180;
-      ctx.fillRect(50, y - 30, canvas.width - 100, quoteBoxHeight);
+      ctx.fillRect(50, y - 30, canvas.width - 100, 180);
       
-      // 장식 아이콘
       ctx.font = '40px Arial';
-      ctx.fillText('💭', canvas.width / 2 - 20, y + 10);
-      
-      // 명언 텍스트
-      ctx.font = '26px "Nanum Pen Script"';
-      ctx.fillStyle = '#5D4E37';
       ctx.textAlign = 'center';
+      ctx.fillText('💭', canvas.width / 2, y + 10);
       
-      // 명언을 여러 줄로 나누기
-      const quoteWords = quote.split(' ');
-      let quoteLine = '';
-      let quoteY = y + 60;
+      ctx.font = `24px "${selectedFont}"`;
+      ctx.fillStyle = '#5D4E37';
+      
       const quoteMaxWidth = canvas.width - 140;
+      let quoteY = y + 60;
+      const quoteChars = quote.split('');
+      let quoteLine = '';
       
-      quoteWords.forEach((word, index) => {
-        const testLine = quoteLine + word + ' ';
+      quoteChars.forEach((char) => {
+        const testLine = quoteLine + char;
         const metrics = ctx.measureText(testLine);
         
         if (metrics.width > quoteMaxWidth && quoteLine !== '') {
           ctx.fillText(quoteLine.trim(), canvas.width / 2, quoteY);
-          quoteLine = word + ' ';
+          quoteLine = char;
           quoteY += 35;
         } else {
           quoteLine = testLine;
         }
       });
       
-      if (quoteLine) {
+      if (quoteLine.trim()) {
         ctx.fillText(quoteLine.trim(), canvas.width / 2, quoteY);
       }
     }
     
-    // 이미지로 변환 및 다운로드
+    // 다운로드
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -378,7 +364,7 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
       <h1>📸 AI 일기장</h1>
       <p className="subtitle">오늘의 순간을 기록하세요</p>
       
-      {/* 사진 업로드 (3장 이상) */}
+      {/* 사진 업로드 */}
       <div className="upload-section">
         <input 
           type="file" 
@@ -396,7 +382,7 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         )}
       </div>
 
-      {/* 사진 미리보기 (여러 장) */}
+      {/* 사진 미리보기 */}
       {imagePreviews.length > 0 && (
         <div className="preview-section">
           <div className="preview-grid">
@@ -412,15 +398,15 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         </div>
       )}
 
-      {/* 기분 선택 (1개만) */}
+      {/* 기분 선택 */}
       <div className="mood-section">
-        <h2>🌈 오늘의 기분을 선택하세요 (1개만)</h2>
+        <h2>🌈 오늘의 기분을 선택하세요</h2>
         <div className="mood-grid">
           {moodOptions.map((option) => (
             <div
               key={option.value}
               className={`mood-item ${mood === option.value ? 'selected' : ''}`}
-              onClick={() => handleMoodChange(option.value)}
+              onClick={() => setMood(option.value)}
               style={{
                 borderColor: mood === option.value ? option.color : '#ddd',
                 background: mood === option.value ? option.color + '30' : 'white'
@@ -429,6 +415,23 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
               <span className="mood-emoji">{option.emoji}</span>
               <span className="mood-text">{option.value}</span>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 필기체 선택 */}
+      <div className="font-section">
+        <h3>✍️ 필기체 선택</h3>
+        <div className="font-grid">
+          {fontOptions.map((font) => (
+            <button
+              key={font.value}
+              className={`font-button ${selectedFont === font.value ? 'selected' : ''}`}
+              onClick={() => setSelectedFont(font.value)}
+              style={{ fontFamily: font.value }}
+            >
+              {font.name}
+            </button>
           ))}
         </div>
       </div>
@@ -442,27 +445,8 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         {loading ? '✨ 일기 작성 중...' : '📝 일기 생성하기'}
       </button>
 
-      {/* 필기체 선택 */}
-      {diary && diary !== '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫' && (
-        <div className="font-section">
-          <h3>✍️ 필기체 선택</h3>
-          <div className="font-grid">
-            {fontOptions.map((font) => (
-              <button
-                key={font.value}
-                className={`font-button ${selectedFont === font.value ? 'selected' : ''}`}
-                onClick={() => setSelectedFont(font.value)}
-                style={{ fontFamily: font.value }}
-              >
-                {font.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* 일기 결과 */}
-      <div className="diary-section" ref={diaryRef}>
+      <div className="diary-section">
         <h2>📖 오늘의 일기</h2>
         <div 
           className="diary-content" 
@@ -471,8 +455,8 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
           {diary || '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫'}
         </div>
         
-        {/* 명언 표시 */}
-        {quote && (
+        {/* 명언 */}
+        {quote && !loading && (
           <div className="quote-section">
             <div className="quote-icon">💭</div>
             <p className="quote-text">{quote}</p>
@@ -480,8 +464,8 @@ ${selectedImages.length}장의 사진을 참고해서 200~300자 일기를 써�
         )}
       </div>
 
-      {/* 이미지 저장 버튼 */}
-      {diary && diary !== '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫' && (
+      {/* 저장 버튼 */}
+      {diary && !loading && diary !== '사진과 기분을 선택한 후 일기 생성 버튼을 눌러주세요 💫' && (
         <button onClick={saveAsImage} className="save-button">
           💾 이미지로 저장하기
         </button>
