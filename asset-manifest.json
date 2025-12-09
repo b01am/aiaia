@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/aiaia/static/css/main.c9fb7bb9.css",
+    "main.js": "/aiaia/static/js/main.35e23df4.js",
+    "static/js/453.7b9d179e.chunk.js": "/aiaia/static/js/453.7b9d179e.chunk.js",
+    "index.html": "/aiaia/index.html",
+    "main.c9fb7bb9.css.map": "/aiaia/static/css/main.c9fb7bb9.css.map",
+    "main.35e23df4.js.map": "/aiaia/static/js/main.35e23df4.js.map",
+    "453.7b9d179e.chunk.js.map": "/aiaia/static/js/453.7b9d179e.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c9fb7bb9.css",
+    "static/js/main.35e23df4.js"
+  ]
+}
