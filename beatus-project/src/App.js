@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 
-const API_KEY = "AIzaSyBDjo07dezt0BqvZ872USHyMW7wrNAyXqQ";
+const API_KEY = "AIzaSyBO-Pl-JLA3wHaAOTG93HGSa9UJJ_gAMuY";
 
 function App() {
   // 상태 관리
